@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Game</title>
+
+		<script src="/socket.io/socket.io.js"></script>
+		<script src="./client.js"></script>
+    </head>
+    <body>
+        <h1>Jeu en temps réel avec socket.io</h1>
+		
+		<div id="loginForm">
+			<input type="text" value="127.0.0.1" placeholder="192.168.30.179" id="server_ip" />
+			<input type="text" value="thibaut" placeholder="nickname" id="nick" /><br/>
+			<input type="color" value="#00C000" id="color" /><br/>
+			<button id="connectBtn">OK</button>
+		</div>
+		
+		<canvas width="800" height="600" id="game"></canvas>
+    </body>
+</html>
