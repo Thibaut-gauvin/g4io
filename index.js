@@ -135,10 +135,10 @@ GameServer.prototype.refresh			= function()
 	
 	if( current != null )
 	{
-        // on envoit au joueur courant l'état de tout les joueurs.
+        // On envoie au joueur courant l'état de tout les joueurs.
 		current.socket.emit('refresh_world', data);
 
-        // on envoit à tout les autres la même chose, par le biais de la proprété broadcast
+        // On envoie à tout les autres la même chose, par le biais de la propriété broadcast
 		current.socket.broadcast.emit('refresh_world', data);
 	}
 
