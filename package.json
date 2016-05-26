@@ -1,16 +1,16 @@
 {
-    "name": "g4io",
-    "version": "0.0.1",
-    "description": "An agar.io like recoded with nodejs",
-    "main": "app.js",
-    "author": "Gauvin Thibaut",
-    "license": "apache",
-    "repository": {
-        "type": "git",
-        "url": "git@github.com:Thibaut-gauvin/g4io.git"
-    },
-    "dependencies": {
-        "express": "^4.13.3",
-        "socket.io": "^1.4.6"
-    }
+  "name": "g4io",
+  "version": "0.0.1",
+  "description": "An agar.io like recoded with nodejs",
+  "main": "app.js",
+  "author": "Gauvin Thibaut, Billy Robin, Dalleau Romain, Koci Remi",
+  "license": "apache",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Thibaut-gauvin/g4io.git"
+  },
+  "dependencies": {
+    "express": "^4.13.3",
+    "socket.io": "^1.4.6"
+  }
 }

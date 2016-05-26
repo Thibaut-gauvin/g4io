@@ -1,4 +1,5 @@
 function Food(){}
+
 Food.prototype.id       = 0;
 Food.prototype.x        = 0;
 Food.prototype.y        = 0;
@@ -170,7 +171,7 @@ GameServer.prototype.init 				        = function()
 	this._server 	= require('http').createServer(app);
 
     this._server.listen(port, function () {
-		console.log('Server listening at port %d', port);
+		console.log('Node Server listening at port %d', port);
 	});
 
 	this._io = socketio.listen(this._server);
