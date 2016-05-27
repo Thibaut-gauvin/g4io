@@ -219,7 +219,7 @@ GameServer.prototype._init 				        = function()
 
 	this._players 	    = [];
 	this._server 	    = require('http').createServer(app);
-    this._refreshRate   = 50;
+    this._refreshRate   = 40;
 
     this._server.listen(port, function () {
 		console.log('Node Server listening at port %d', port);
@@ -228,7 +228,7 @@ GameServer.prototype._init 				        = function()
 	this._io = socketio.listen(this._server);
 	this._io.sockets.on('connection', this._connectHandler.bind(this) );
 
-	app.get('/', HomeController);
+	app.get('/', this._serveHomePage);
     app.use(express.static(__dirname + '/'));
 
     this._foods = this._generateFood(100);
@@ -240,12 +240,11 @@ GameServer.prototype._init 				        = function()
  *
  * @param req
  * @param res
- * @constructor
  */
-function HomeController(req, res)
+GameServer.prototype._serveHomePage             = function(req, res)
 {
     res.sendFile(__dirname + '/index.html');
-}
+};
 
 /**
  * Handle connection to server

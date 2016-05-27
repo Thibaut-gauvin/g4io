@@ -32,13 +32,14 @@ Player.prototype.getState		= function()
  */
 function Application(){}
 
-Application.prototype._serverIP = 0;
-Application.prototype._port     = 0;
-Application.prototype._socket   = null;
-Application.prototype._player   = null;
-Application.prototype._canvas   = null;
-Application.prototype.mouseX    = 0;
-Application.prototype.mouseY    = 0;
+Application.prototype._serverIP     = 0;
+Application.prototype._port         = 0;
+Application.prototype._socket       = null;
+Application.prototype._refreshRate  = null;
+Application.prototype._player       = null;
+Application.prototype._canvas       = null;
+Application.prototype.mouseX        = 0;
+Application.prototype.mouseY        = 0;
 
 /**
  * Init Application
@@ -58,6 +59,7 @@ Application.prototype.init                      = function()
     this._player.y 		= ( Math.random() * 200 ) >> 0;
     this._canvas		= document.getElementById('game');
     this._port          = 3000;
+    this._refreshRate   = 40;
 
     this._canvas.addEventListener( "mousemove", this._overHandler.bind(this) );
 
@@ -197,7 +199,7 @@ Application.prototype._render                   = function()
         this._socket.emit('set_player_data', this._player.getState());
     }
 
-    setTimeout(this._render.bind(this), 1000/60);
+    setTimeout(this._render.bind(this), this._refreshRate);
 };
 
 /**
