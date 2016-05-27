@@ -1,15 +1,17 @@
 function Player(){}
 
-Player.prototype.name 			= null;
-Player.prototype.color			= '#000000';
-Player.prototype.x 				= 0;
-Player.prototype.y 				= 0;
-Player.prototype.logged 		= false;
-Player.prototype.mass 			= 10;
+Player.prototype.name           = null;
+Player.prototype.color          = '#000000';
+Player.prototype.x              = 0;
+Player.prototype.y              = 0;
+Player.prototype.logged         = false;
+Player.prototype.mass           = 10;
+Player.prototype.id             = 0;
 
-Player.prototype.getState		= function()
+Player.prototype.getState       = function()
 {
-    return { x: this.x, y: this.y, color: this.color, name: this.name, mass: this.mass };
+    //console.log('CLIENT : Player.getState - player.id : ' + this.id);
+    return { x: this.x, y: this.y, color: this.color, name: this.name, mass: this.mass, id:this.id };
 };
 
 
@@ -21,40 +23,45 @@ Application.prototype._player   = null;
 Application.prototype._canvas   = null;
 Application.prototype.mouseX    = 0;
 Application.prototype.mouseY    = 0;
+Application.prototype.lastPlayerId = 0;
 
 
 Application.prototype.init = function()
 {
-    this._player 		= new Player();
-    this._player.name	= document.getElementById("nick").value;
-    this._player.color	= document.getElementById("color").value;
-    this._serverIP		= document.getElementById("server_ip").value;
-    this._player.x 		= ( Math.random() * 200 ) >> 0;
-    this._player.y 		= ( Math.random() * 200 ) >> 0;
+    this._player        = new Player();
+    this._player.name   = document.getElementById("nick").value;
+    this._player.color  = document.getElementById("color").value;
+    this._serverIP      = document.getElementById("server_ip").value;
+    this._player.x      = ( Math.random() * 200 ) >> 0;
+    this._player.y      = ( Math.random() * 200 ) >> 0;
+
+    //console.log('CLIENT : Application.init - player.id before login : ' + this._player.id);
+
 
     window.addEventListener("keyup", this._keyHandler.bind(this) );
 
-    this._canvas		= document.getElementById('game');
+    this._canvas        = document.getElementById('game');
     this._canvas.addEventListener( "mousemove", this._overHandler.bind(this) );
 
     var port = 3000;
     this._socket = io.connect(this._serverIP + ':' + port);
-    console.log('client connection to: ' + this._serverIP + ' on port: ' + port);
-
+    //console.log('client connection to: ' + this._serverIP + ' on port: ' + port);
+    
     this._socket.on('require_login', this._requireLoginHandler.bind(this) );
     this._socket.on('refresh_world', this._refreshHandler.bind(this) );
+
+    //console.log('CLIENT : Application.init - player.id after login : ' + this._player.id);
 };
 
-Application.prototype.checkCollisions = function(entities)
+Application.prototype.checkCollisionsFood = function(entities)
 {
-    var distX 		= 0;
-    var distY 		= 0;
-    var dist		= 0;
-    var currentX 	= this._player.x;
-    var currentY 	= this._player.y;
-    var dist 		= 0;
-    var i 			= entities.length;
-    var entity 		= null;
+    var distX       = 0;
+    var distY       = 0;
+    var dist        = 0;
+    var currentX    = this._player.x;
+    var currentY    = this._player.y;
+    var i           = entities.length;
+    var entity      = null;
 
     while( --i > -1 )
     {
@@ -74,20 +81,75 @@ Application.prototype.checkCollisions = function(entities)
     }
 };
 
+Application.prototype.checkCollisionsPlayer = function(entities)
+{
+    //console.log('CLIENT : Application.checkCollisionsPlayer - player.id before check : ' + this._player.id);
+    var distX       = 0;
+    var distY       = 0;
+    var dist        = 0;
+    var currentX    = this._player.x;
+    var currentY    = this._player.y;
+    var i           = entities.length;
+    var entity      = null;
+    var eatAnotherPlayer = false ;
+
+
+    while( --i > -1 ) {
+
+        entity = entities[i];
+
+        if(entity != null) {
+
+            if (entity.id != this._player.id) {
+
+                distX = ( entity.x - currentX ) * ( entity.x - currentX );
+                distY = ( entity.y - currentY ) * ( entity.y - currentY );
+
+                dist = Math.sqrt(distX + distY);
+
+                if (dist <= ( this._player.mass >> 1 )) {
+
+                    if( entity.mass * 1.20 <= this._player.mass )
+                        eatAnotherPlayer = true ;
+                        
+
+
+                    if(eatAnotherPlayer)
+                    {
+                            
+
+                        this._player.mass += parseInt(entity.mass / 10);
+
+                        
+                        this._socket.emit("collide_player", entity.id);
+
+                        eatAnotherPlayer = false;
+                    }
+                    
+                }
+            }
+        }
+    }
+
+    //console.log('CLIENT : Application.checkCollisionsPlayer - player.id after check : ' + this._player.id);
+};
+
 Application.prototype._refreshHandler = function(data)
 {
-    var players 	= data.players;
-    var food		= data.food;
-    var i 			= 0;
-    var canvas 		= this._canvas;
-    var current		= null;
-    var context 	= canvas.getContext("2d");
-    var radius		= 0;
+    //console.log('CLIENT : Application._refreshHandler - player.id before refresh : ' + this._player.id);
+    var players     = data.players;
+    var food        = data.food;
+    var i           = 0;
+    var canvas      = this._canvas;
+    var current     = null;
+    var context     = canvas.getContext("2d");
+    var radius      = 0;
 
     context.clearRect(0,0,canvas.width, canvas.height );
 
 
-    this.checkCollisions(data.food);
+    this.checkCollisionsFood(food);
+    this.checkCollisionsPlayer(players);
 
     i = food.length;
 
@@ -120,18 +182,25 @@ Application.prototype._refreshHandler = function(data)
         context.fill();
         context.restore();
     }
+
+    //console.log('CLIENT : Application._refreshHandler - player.id after refresh : ' + this._player.id);
 };
 
-Application.prototype._keyHandler		= function()
+Application.prototype._keyHandler       = function()
 {
     this._player.mass += 5;
 };
 
 Application.prototype._requireLoginHandler = function(data)
 {
+    //console.log('CLIENT : Application._requireLoginHandler - player.id before requireLogin : ' + this._player.id);
     this._socket.emit("login", this._player);
+    //console.log('CLIENT : Application._requireLoginHandler - player.id after _socket.emit : ' + this._player.id);
     this._player.logged = true;
+    this._player.id = data.id;
+    //console.log('CLIENT : Application._requireLoginHandler - player.id before render : ' + this._player.id);
     this._render();
+    //console.log('CLIENT : Application._requireLoginHandler - player.id after requireLogin : ' + this._player.id);
 };
 
 Application.prototype._overHandler = function(event)
@@ -159,7 +228,7 @@ Application.prototype._render = function()
         this._socket.emit('set_player_data', this._player.getState());
     }
 
-    setTimeout(this._render.bind(this),1000/60);
+    setTimeout(this._render.bind(this), 40);
 };
 
 
