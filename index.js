@@ -1,3 +1,11 @@
+/*****************************/
+/*         Server            */
+/*****************************/
+
+
+/**
+ * Define Food Object
+ */
 function Food(){}
 Food.prototype.id       = 0;
 Food.prototype.x        = 0;
@@ -5,26 +13,15 @@ Food.prototype.y        = 0;
 Food.prototype.mass     = 10;
 Food.prototype.color    = null;
 
-function generateFood(nb)
-{
-    var foods = new Array();
-
-    while( --nb > -1 )
-    {
-        var food = new Food();
-        food.x      = ( Math.random() * 800 ) >> 0;
-        food.y      = ( Math.random() * 600 ) >> 0;
-        food.mass   = 10;
-        food.color  = '#'+parseInt( Math.random() * 0xFFFFFF ).toString(16);
-        food.id     = nb;
-
-        foods.push(food);
-    }
-
-    return foods;
-}
 
 
+
+
+/**
+ * Define Player Object
+ *
+ * @param socket
+ */
 function Player(socket)
 {
     this._init(socket);
@@ -40,25 +37,33 @@ Player.prototype.type   = 0;
 Player.prototype.mass   = 10;
 Player.prototype.id     = 0;
 
+/**
+ * Init Player
+ *
+ * @param socket
+ */
 Player.prototype._init = function(socket)
 {
-    this.logged = false;
-    this.socket = socket;
+    this.logged             = false;
+    this.socket             = socket;
 
-    var gameServer  = GameServer.getInstance();
+    var gameServer          = GameServer.getInstance();
     gameServer.lastPlayerId = gameServer.lastPlayerId + 1;
-    this.id         = gameServer.lastPlayerId;
+    this.id                 = gameServer.lastPlayerId;
 
     this.socket.once("login", this._loginHandler.bind(this) );
     this.socket.on("set_player_data", this._setDataHandler.bind(this) );
-
-    console.log('SERVER : Player._init - player.id before socket.emit(require_login) : ' + this.getState().id);
     this.socket.emit("require_login", this.getState());
 };
 
+/**
+ * Handle set_player_data event emitted by Players
+ *
+ * @param data
+ * @private
+ */
 Player.prototype._setDataHandler = function(data)
 {
-    //console.log('SERVER : Player._setDataHandler - player.id before handle : ' + this.id);
     this.time   = Date.now();
     this.mass   = data.mass;
     this.name   = data.name;
@@ -66,12 +71,15 @@ Player.prototype._setDataHandler = function(data)
     this.y      = data.y;
     this.color  = data.color;
     this.logged = true;
-    //console.log('SERVER : Player._setDataHandler - player.id before handle : ' + this.id);
 };
 
+/**
+ * Handle new player connection
+ *
+ * @param data
+ */
 Player.prototype._loginHandler = function(data)
 {
-    //console.log('SERVER : Player._loginHandler - player.id before handle : ' + this.id);
     var gameServer  = GameServer.getInstance();
     this.time       = Date.now();
     this.mass       = data.mass;
@@ -83,16 +91,22 @@ Player.prototype._loginHandler = function(data)
 
     this.socket.on('collide_food', gameServer._collideFoodHandler.bind(gameServer));
     this.socket.on('collide_player', gameServer._collidePlayerHandler.bind(gameServer));
-
-    //console.log('SERVER : Player._loginHandler - player.id after handle : ' + this.id);
 };
 
+/**
+ * Return player properties to client
+ *
+ * @returns { { x: *, y: *, color: *, name: *, mass: *, id: * } }
+ */
 Player.prototype.getState       = function()
 {
-    //console.log('SERVER : Player.getState - player.id before return : ' + this.id);
     return { x: this.x, y: this.y, color: this.color, name: this.name, mass:this.mass, id:this.id };
 };
 
+/**
+ * When a user is set to inactive,
+ * Disconnect player from socket & destroy Player object
+ */
 Player.prototype.destroy = function()
 {
     this.socket.disconnect();
@@ -110,27 +124,38 @@ Player.prototype.destroy = function()
 
 
 
-
-
+/**
+ * Define GameServer Object
+ */
 function GameServer(){}
 
-GameServer._instance                    = null;
+GameServer._instance                = null;
+GameServer.prototype._server        = null;
+GameServer.prototype._io            = null;
+GameServer.prototype._refreshRate   = null;
+GameServer.prototype._players       = null;
+GameServer.prototype._foods         = null;
+GameServer.prototype.lastPlayerId   = 0;
+
+/**
+ * Return current GameServer instance if exist,
+ * Create new one if not.
+ *
+ * @returns {null|*|GameServer}
+ */
 GameServer.getInstance                  = function()
 {
     GameServer._instance = GameServer._instance || new GameServer();
     return GameServer._instance;
 };
 
-GameServer.prototype._server            = null;
-GameServer.prototype._io                = null;
-GameServer.prototype._players           = null;
-GameServer.prototype._foods             = null;
-GameServer.prototype.lastPlayerId      = 0;
-
+/**
+ * Refresh game data
+ */
 GameServer.prototype.refresh            = function()
 {
     var timestamp   = Date.now();
-    var inactives   = new Array();
+    var inactives   = [];
     var data        = { players: [], food: this._foods };
     var i           = this._players.length;
     var current     = null;
@@ -140,7 +165,7 @@ GameServer.prototype.refresh            = function()
         current = this._players[i];
         if( current.logged == false )
             continue;
-            
+
         data.players.push( current.getState() );
 
         if( timestamp - current.time > 5000 )
@@ -149,7 +174,7 @@ GameServer.prototype.refresh            = function()
             inactives.push(current);
         }
     }
-    
+
     if( current != null )
     {
         // On envoie au joueur courant l'état de tout les joueurs.
@@ -168,23 +193,47 @@ GameServer.prototype.refresh            = function()
         current.destroy();
         current = null;
     }
-    
-    setTimeout( this.refresh.bind(this), 40);
+
+    setTimeout( this.refresh.bind(this), this._refreshRate);
 };
 
+/**
+ * Generate new random foods items and send them to client
+ *
+ * @param nb
+ * @returns { Array }
+ */
+GameServer.prototype._generateFood               = function(nb)
+{
+    var foods = [];
+    while( --nb > -1 )
+    {
+        var food    = new Food();
+        food.x      = ( Math.random() * 800 ) >> 0;
+        food.y      = ( Math.random() * 600 ) >> 0;
+        food.mass   = 10;
+        food.color  = '#'+parseInt( Math.random() * 0xFFFFFF ).toString(16);
+        food.id     = nb;
 
-var path = require("path");
+        foods.push(food);
+    }
 
+    return foods;
+};
 
+/**
+ * Init Game
+ */
 GameServer.prototype.init                       = function()
 {
-    var express     = require('express');
-    var app         = express();
-    var socketio    = require('socket.io');
-    var port        = 3000;
+    var express         = require('express');
+    var app             = express();
+    var socketio        = require('socket.io');
+    var port            = 3000;
 
-    this._players   = [];
-    this._server    = require('http').createServer(app);
+    this._players       = [];
+    this._server        = require('http').createServer(app);
+    this._refreshRate   = 40;
 
     this._server.listen(port, function () {
         console.log('Server listening at port %d', port);
@@ -193,23 +242,40 @@ GameServer.prototype.init                       = function()
     this._io = socketio.listen(this._server);
     this._io.sockets.on('connection', this._connectHandler.bind(this) );
 
-    app.get('/', HomeController);
+    app.get('/', this._serveHomePage);
     app.use(express.static(__dirname + '/'));
 
-    this._foods = generateFood(100);
+    this._foods = this._generateFood(100);
     this.refresh();
 };
 
-function HomeController(req, res)
-{
-    res.sendFile(path.join(__dirname+'/index.html'));
-}
 
+/**
+ * Send Home Page to visitor
+ *
+ * @param req
+ * @param res
+ */
+GameServer.prototype._serveHomePage             = function(req, res)
+{
+    res.sendFile(__dirname + '/index.html');
+};
+
+/**
+ * Handle connection to server
+ *
+ * @param socket
+ */
 GameServer.prototype._connectHandler            = function(socket)
 {
     this._players.push( new Player(socket) );
 };
 
+/**
+ * Handle Collision between player & foods
+ *
+ * @param foodId
+ */
 GameServer.prototype._collideFoodHandler        = function(foodId)
 {
     var i = this._foods.length;
@@ -226,6 +292,11 @@ GameServer.prototype._collideFoodHandler        = function(foodId)
     }
 };
 
+/**
+ * Handle Collision between player & other players
+ *
+ * @param playerId
+ */
 GameServer.prototype._collidePlayerHandler      = function(playerId)
 {
     var i = this._players.length;
@@ -243,4 +314,7 @@ GameServer.prototype._collidePlayerHandler      = function(playerId)
     }
 };
 
+/**
+ * Start game
+ */
 GameServer.getInstance().init();
