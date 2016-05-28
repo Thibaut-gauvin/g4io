@@ -1,5 +1,3 @@
-![logo](frontend/assets/img/site/logo.png)
-
 # G4io
 
 **An agar.io like recoded with nodejs for school project.**
