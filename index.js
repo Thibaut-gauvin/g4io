@@ -6,8 +6,7 @@
 /**
  * Define Food Object
  */
-function Food() {}
-
+function Food(){}
 Food.prototype.id       = 0;
 Food.prototype.x        = 0;
 Food.prototype.y        = 0;
@@ -24,25 +23,36 @@ Food.prototype.color    = null;
  */
 function Player(socket)
 {
-	this._init(socket);
+    this._init(socket);
 }
 
 Player.prototype.logged = false;
 Player.prototype.socket = null;
-Player.prototype.name 	= null;
-Player.prototype.x 		= 0;
-Player.prototype.y 		= 0;
-Player.prototype.color	= null;
+Player.prototype.name   = null;
+Player.prototype.x      = 0;
+Player.prototype.y      = 0;
+Player.prototype.color  = null;
 Player.prototype.type   = 0;
 Player.prototype.mass   = 10;
+Player.prototype.id     = 0;
 
-Player.prototype._init                          = function(socket)
+/**
+ * Init Player
+ *
+ * @param socket
+ */
+Player.prototype._init = function(socket)
 {
-	this.logged = false;
-	this.socket = socket;
-	this.socket.once("login", this._loginHandler.bind(this) );
-	this.socket.on("set_player_data", this._setDataHandler.bind(this) );
-	this.socket.emit("require_login");
+    this.logged             = false;
+    this.socket             = socket;
+
+    var gameServer          = GameServer.getInstance();
+    gameServer.lastPlayerId = gameServer.lastPlayerId + 1;
+    this.id                 = gameServer.lastPlayerId;
+
+    this.socket.once("login", this._loginHandler.bind(this) );
+    this.socket.on("set_player_data", this._setDataHandler.bind(this) );
+    this.socket.emit("require_login", this.getState());
 };
 
 /**
@@ -51,15 +61,15 @@ Player.prototype._init                          = function(socket)
  * @param data
  * @private
  */
-Player.prototype._setDataHandler                = function(data)
+Player.prototype._setDataHandler = function(data)
 {
     this.time   = Date.now();
     this.mass   = data.mass;
-    this.name 	= data.name;
-	this.x 		= data.x;
-	this.y 		= data.y;
-	this.color 	= data.color;
-	this.logged = true;
+    this.name   = data.name;
+    this.x      = data.x;
+    this.y      = data.y;
+    this.color  = data.color;
+    this.logged = true;
 };
 
 /**
@@ -67,35 +77,36 @@ Player.prototype._setDataHandler                = function(data)
  *
  * @param data
  */
-Player.prototype._loginHandler                  = function(data)
+Player.prototype._loginHandler = function(data)
 {
     var gameServer  = GameServer.getInstance();
     this.time       = Date.now();
     this.mass       = data.mass;
-    this.name 	    = data.name;
-	this.x 		    = data.x;
-	this.y 		    = data.y;
-	this.color 	    = data.color;
-	this.logged     = true;
+    this.name       = data.name;
+    this.x          = data.x;
+    this.y          = data.y;
+    this.color      = data.color;
+    this.logged     = true;
 
     this.socket.on('collide_food', gameServer._collideFoodHandler.bind(gameServer));
+    this.socket.on('collide_player', gameServer._collidePlayerHandler.bind(gameServer));
 };
 
 /**
  * Return player properties to client
  *
- * @returns { { x: *, y: *, color: *, name: *, mass: * } }
+ * @returns { { x: *, y: *, color: *, name: *, mass: *, id: * } }
  */
-Player.prototype.getState		                = function()
+Player.prototype.getState       = function()
 {
-	return { x: this.x, y: this.y, color: this.color, name: this.name, mass:this.mass };
+    return { x: this.x, y: this.y, color: this.color, name: this.name, mass:this.mass, id:this.id };
 };
 
 /**
  * When a user is set to inactive,
  * Disconnect player from socket & destroy Player object
  */
-Player.prototype.destroy                        = function()
+Player.prototype.destroy = function()
 {
     this.socket.disconnect();
     this.logged = false;
@@ -106,6 +117,7 @@ Player.prototype.destroy                        = function()
     this.y      = 0;
     this.mass   = 0;
     this.color  = null;
+    this.id     = 0;
 };
 
 
@@ -116,12 +128,13 @@ Player.prototype.destroy                        = function()
  */
 function GameServer(){}
 
-GameServer._instance 					        = null;
-GameServer.prototype._server 			        = null;
-GameServer.prototype._io 				        = null;
-GameServer.prototype._refreshRate               = null;
-GameServer.prototype._players 			        = null;
-GameServer.prototype._foods                     = null;
+GameServer._instance                = null;
+GameServer.prototype._server        = null;
+GameServer.prototype._io            = null;
+GameServer.prototype._refreshRate   = null;
+GameServer.prototype._players       = null;
+GameServer.prototype._foods         = null;
+GameServer.prototype.lastPlayerId   = 0;
 
 /**
  * Return current GameServer instance if exist,
@@ -129,8 +142,8 @@ GameServer.prototype._foods                     = null;
  *
  * @returns {null|*|GameServer}
  */
-GameServer.getInstance 					        = function()
-{
+
+GameServer.getInstance                  = function(){
     GameServer._instance = GameServer._instance || new GameServer();
     return GameServer._instance;
 };
@@ -138,37 +151,37 @@ GameServer.getInstance 					        = function()
 /**
  * Refresh game data
  */
-GameServer.prototype._refresh			        = function()
+GameServer.prototype.refresh            = function()
 {
     var timestamp   = Date.now();
     var inactives   = [];
-	var data	    = { players: [], food: this._foods };
-	var i 		    = this._players.length;
-	var current     = null;
+    var data        = { players: [], food: this._foods };
+    var i           = this._players.length;
+    var current     = null;
 
-	while( --i > -1 )
-	{
-		current = this._players[i];
-		if( current.logged == false )
-			continue;
-			
-		data.players.push( current.getState() );
+    while( --i > -1 )
+    {
+        current = this._players[i];
+        if( current.logged == false )
+            continue;
 
-        if( timestamp - current.time > 5000)
+        data.players.push( current.getState() );
+
+        if( timestamp - current.time > 5000 )
         {
             current.logged = false;
             inactives.push(current);
         }
-	}
-	
-	if( current != null )
-	{
+    }
+
+    if( current != null )
+    {
         // On envoie au joueur courant l'état de tout les joueurs.
-		current.socket.emit('refresh_world', data);
+        current.socket.emit('refresh_world', data);
 
         // On envoie à tout les autres la même chose, par le biais de la propriété broadcast
-		current.socket.broadcast.emit('refresh_world', data);
-	}
+        current.socket.broadcast.emit('refresh_world', data);
+    }
 
     i = inactives.length;
 
@@ -179,15 +192,15 @@ GameServer.prototype._refresh			        = function()
         current.destroy();
         current = null;
     }
-	
-	setTimeout( this._refresh.bind(this), this._refreshRate);
+
+    setTimeout( this.refresh.bind(this), this._refreshRate);
 };
 
 /**
  * Generate new random foods items and send them to client
  *
  * @param nb
- * @returns {Array}
+ * @returns { Array }
  */
 GameServer.prototype._generateFood               = function(nb)
 {
@@ -210,30 +223,31 @@ GameServer.prototype._generateFood               = function(nb)
 /**
  * Init Game
  */
-GameServer.prototype._init 				        = function()
+GameServer.prototype.init                       = function()
 {
-	var express 	    = require('express');
-	var app     	    = express();
-	var socketio 	    = require('socket.io');
+    var express         = require('express');
+    var app             = express();
+    var socketio        = require('socket.io');
     var port            = 3000;
 
-	this._players 	    = [];
-	this._server 	    = require('http').createServer(app);
+    this._players       = [];
+    this._server        = require('http').createServer(app);
     this._refreshRate   = 40;
 
     this._server.listen(port, function () {
-		console.log('Node Server listening at port %d', port);
-	});
+        console.log('Server listening at port %d', port);
+    });
 
-	this._io = socketio.listen(this._server);
-	this._io.sockets.on('connection', this._connectHandler.bind(this) );
+    this._io = socketio.listen(this._server);
+    this._io.sockets.on('connection', this._connectHandler.bind(this) );
 
-	app.get('/', this._serveHomePage);
+    app.get('/', this._serveHomePage);
     app.use(express.static(__dirname + '/'));
 
     this._foods = this._generateFood(100);
-	this._refresh();
+    this.refresh();
 };
+
 
 /**
  * Send Home Page to visitor
@@ -251,19 +265,17 @@ GameServer.prototype._serveHomePage             = function(req, res)
  *
  * @param socket
  */
-GameServer.prototype._connectHandler 	        = function(socket)
+GameServer.prototype._connectHandler            = function(socket)
 {
-    console.log('new players connection');
-
-	this._players.push( new Player(socket) );
+    this._players.push( new Player(socket) );
 };
 
 /**
- * Handle player food collide
+ * Handle Collision between player & foods
  *
  * @param foodId
  */
-GameServer.prototype._collideFoodHandler		= function(foodId)
+GameServer.prototype._collideFoodHandler        = function(foodId)
 {
     var i = this._foods.length;
 
@@ -280,6 +292,28 @@ GameServer.prototype._collideFoodHandler		= function(foodId)
 };
 
 /**
+ * Handle Collision between player & other players
+ *
+ * @param playerId
+ */
+GameServer.prototype._collidePlayerHandler      = function(playerId)
+{
+    var i = this._players.length;
+
+    var current = null;
+    while( --i > -1 )
+    {
+        current = this._players[i];
+        if( current.id == playerId )
+        {
+            current.socket.disconnect();
+            this._players.splice( this._players.indexOf( current ), 1);
+            current.destroy();
+        }
+    }
+};
+
+/**
  * Start game
  */
-GameServer.getInstance()._init();
+GameServer.getInstance().init();

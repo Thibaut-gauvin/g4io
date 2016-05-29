@@ -2,28 +2,27 @@
 /*         Client            */
 /*****************************/
 
-
 /**
  * Define Player Object
  */
 function Player(){}
 
-Player.prototype.name 			= null;
-Player.prototype.color			= '#000000';
-Player.prototype.x 				= 0;
-Player.prototype.y 				= 0;
-Player.prototype.logged 		= false;
-Player.prototype.mass 			= 20;
+Player.prototype.name           = null;
+Player.prototype.color          = '#000000';
+Player.prototype.x              = 0;
+Player.prototype.y              = 0;
+Player.prototype.logged         = false;
+Player.prototype.mass           = 10;
+Player.prototype.id             = 0;
 
 /**
  * Return player properties to server
- *
- * @returns { { x: *, y: *, color: *, name: *, mass: * } }
  */
-Player.prototype.getState		= function()
+Player.prototype.getState       = function()
 {
-    return { x: this.x, y: this.y, color: this.color, name: this.name, mass: this.mass };
+    return { x: this.x, y: this.y, color: this.color, name: this.name, mass: this.mass, id:this.id };
 };
+
 
 
 
@@ -32,14 +31,19 @@ Player.prototype.getState		= function()
  */
 function Application(){}
 
+/**
+ * Define Application Object
+ */
+function Application(){}
+
 Application.prototype._serverIP     = 0;
-Application.prototype._port         = 0;
 Application.prototype._socket       = null;
 Application.prototype._refreshRate  = null;
 Application.prototype._player       = null;
 Application.prototype._canvas       = null;
 Application.prototype.mouseX        = 0;
 Application.prototype.mouseY        = 0;
+Application.prototype.lastPlayerId  = 0;
 
 /**
  * Init Application
@@ -51,39 +55,39 @@ Application.prototype.mouseY        = 0;
  */
 Application.prototype.init                      = function()
 {
-    this._player 		= new Player();
-    this._player.name	= document.getElementById("nick").value;
-    this._player.color	= document.getElementById("color").value;
-    this._serverIP		= document.getElementById("server_ip").value;
-    this._player.x 		= ( Math.random() * 200 ) >> 0;
-    this._player.y 		= ( Math.random() * 200 ) >> 0;
-    this._canvas		= document.getElementById('game');
+    this._player        = new Player();
+    this._player.name   = document.getElementById("nick").value;
+    this._player.color  = document.getElementById("color").value;
+    this._serverIP      = document.getElementById("server_ip").value;
+    this._player.x      = ( Math.random() * 200 ) >> 0;
+    this._player.y      = ( Math.random() * 200 ) >> 0;
+    this._canvas        = document.getElementById('game');
     this._port          = 3000;
     this._refreshRate   = 40;
 
+    window.addEventListener("keyup", this._keyHandler.bind(this) );
     this._canvas.addEventListener( "mousemove", this._overHandler.bind(this) );
 
-    this._socket = io.connect(this._serverIP + ':' + this._port);
-    console.log('client connection to: ' + this._serverIP + ' on port: ' + this._port);
+    this._socket = io.connect(this._serverIP + ':' + this._port );
 
     this._socket.on('require_login', this._requireLoginHandler.bind(this) );
     this._socket.on('refresh_world', this._refreshHandler.bind(this) );
 };
 
 /**
- * Check if player and given entities collide
+ * Check if player collide with some foods
  *
  * @param entities
  */
-Application.prototype.checkCollisions           = function(entities)
+Application.prototype.checkCollisionsFood       = function(entities)
 {
-    var distX 		= 0;
-    var distY 		= 0;
-    var dist		= 0;
-    var currentX 	= this._player.x;
-    var currentY 	= this._player.y;
-    var i 			= entities.length;
-    var entity 		= null;
+    var distX       = 0;
+    var distY       = 0;
+    var dist        = 0;
+    var currentX    = this._player.x;
+    var currentY    = this._player.y;
+    var i           = entities.length;
+    var entity      = null;
 
     while( --i > -1 )
     {
@@ -99,7 +103,55 @@ Application.prototype.checkCollisions           = function(entities)
             this._player.mass += parseInt(entity.mass / 10);
             this._socket.emit("collide_food", entity.id);
         }
+    }
+};
 
+/**
+ * Check if player collide with other players
+ *
+ * @param entities
+ */
+Application.prototype.checkCollisionsPlayer     = function(entities)
+{
+    var distX       = 0;
+    var distY       = 0;
+    var dist        = 0;
+    var currentX    = this._player.x;
+    var currentY    = this._player.y;
+    var i           = entities.length;
+    var entity      = null;
+    var eatAnotherPlayer = false ;
+
+
+    while( --i > -1 ) {
+
+        entity = entities[i];
+
+        if(entity != null)
+        {
+            if (entity.id != this._player.id)
+            {
+                distX = ( entity.x - currentX ) * ( entity.x - currentX );
+                distY = ( entity.y - currentY ) * ( entity.y - currentY );
+
+                dist = Math.sqrt(distX + distY);
+
+                if (dist <= ( this._player.mass >> 1 ))
+                {
+                    if( entity.mass * 1.20 <= this._player.mass )
+                    {
+                        eatAnotherPlayer = true ;
+                    }
+
+                    if(eatAnotherPlayer)
+                    {
+                        this._player.mass += parseInt(entity.mass / 10);
+                        this._socket.emit("collide_player", entity.id);
+                        eatAnotherPlayer = false;
+                    }
+                }
+            }
+        }
     }
 };
 
@@ -110,25 +162,24 @@ Application.prototype.checkCollisions           = function(entities)
  */
 Application.prototype._refreshHandler           = function(data)
 {
-    var players 	    = data.players;
-    var food		    = data.food;
-    var foodLength      = food.length;
+    var players         = data.players;
+    var foods           = data.food;
+    var foodLength      = foods.length;
     var playerLength    = players.length;
 
-    var canvas 		    = this._canvas;
-    var current		    = null;
-    var context 	    = canvas.getContext("2d");
-    var radius		    = 0;
+    var canvas      = this._canvas;
+    var current     = null;
+    var context     = canvas.getContext("2d");
+    var radius      = 0;
 
-    // Check if they are any collision on current frame
-    this.checkCollisions(data.food);
-
-    // Draw food & player items
     context.clearRect(0,0,canvas.width, canvas.height );
+
+    this.checkCollisionsFood(foods);
+    this.checkCollisionsPlayer(players);
 
     while( --foodLength > -1 )
     {
-        current = food[foodLength];
+        current = foods[foodLength];
         radius  = current.mass / 2;
         context.save();
         context.translate(current.x, current.y);
@@ -155,14 +206,23 @@ Application.prototype._refreshHandler           = function(data)
 };
 
 /**
+ * Debug method to grow up player mass when arrow up is press
+ */
+Application.prototype._keyHandler               = function()
+{
+    this._player.mass += 5;
+};
+
+/**
  * Handle require_login event
  *
  * @param data
  */
-Application.prototype._requireLoginHandler = function(data)
+Application.prototype._requireLoginHandler      = function(data)
 {
     this._socket.emit("login", this._player);
     this._player.logged = true;
+    this._player.id = data.id;
     this._render();
 };
 
@@ -171,7 +231,7 @@ Application.prototype._requireLoginHandler = function(data)
  *
  * @param event
  */
-Application.prototype._overHandler              = function(event)
+Application.prototype._overHandler = function(event)
 {
     var bounds  = this._canvas.getBoundingClientRect();
     var x       = 0;
@@ -190,7 +250,7 @@ Application.prototype._overHandler              = function(event)
 /**
  * Send player position to server
  */
-Application.prototype._render                   = function()
+Application.prototype._render = function()
 {
     if( this._player.logged == true )
     {
@@ -214,7 +274,7 @@ function run()
 }
 
 /**
- * Listen login form submit
+ * Listen login form submission
  */
 window.onload = function()
 {
