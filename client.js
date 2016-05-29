@@ -14,6 +14,7 @@ Player.prototype.y              = 0;
 Player.prototype.logged         = false;
 Player.prototype.mass           = 10;
 Player.prototype.id             = 0;
+Player.prototype.speed = 0;
 
 /**
  * Return player properties to server
@@ -254,10 +255,13 @@ Application.prototype._render = function()
 {
     if( this._player.logged == true )
     {
-        this._player.x += parseInt( ( this.mouseX - this._player.x ) * 0.1 );
-        this._player.y += parseInt( ( this.mouseY - this._player.y ) * 0.1 );
+        console.log(Math.sqrt(1 / (this._player.mass * 30) )) ;
+        this._player.x += parseInt( ( this.mouseX - this._player.x ) * (Math.sqrt(1 / (this._player.mass * 30)) ));
+        this._player.y += parseInt( ( this.mouseY - this._player.y ) * (Math.sqrt(1 / (this._player.mass * 30)) ));
         this._socket.emit('set_player_data', this._player.getState());
     }
+
+    this._refreshRate -=  this._player.mass/10 ;
 
     setTimeout(this._render.bind(this), this._refreshRate);
 };
