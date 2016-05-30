@@ -64,6 +64,7 @@ Application.prototype.init                      = function()
     this._refreshRate   = 40;
 
     window.addEventListener("keyup", this._keyHandler.bind(this) );
+    window.addEventListener("spacebar", this._splitPlayerHandler.bind(this) );
     this._canvas.addEventListener( "mousemove", this._overHandler.bind(this) );
 
     this._socket = io.connect(this._serverIP + ':' + this._port );
@@ -214,6 +215,14 @@ Application.prototype._keyHandler               = function()
 };
 
 /**
+ * Split Player into multiple entity
+ */
+Application.prototype._splitPlayerHandler       = function()
+{
+    this._player
+};
+
+/**
  * Handle require_login event
  *
  * @param data
@@ -268,6 +277,8 @@ Application.prototype._render = function()
 function run()
 {
     document.getElementById("loginForm").style.display = "none";
+    document.getElementById("game").style.display = "block";
+
     document.getElementById("connectBtn").removeEventListener("click", run);
     var app = new Application();
     app.init();

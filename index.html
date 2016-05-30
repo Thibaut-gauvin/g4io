@@ -1,23 +1,44 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <title>Game</title>
-		<link rel="stylesheet" type="text/css" href="style.css">
-		<link id="favicon" rel="icon" type="image/png" href="favicon-32x32.png"/>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Game</title>
+
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+		<link rel="stylesheet" href="style.css" >
+
 		<script src="/socket.io/socket.io.js"></script>
 		<script src="./client.js"></script>
-    </head>
-    <body>
-        <h1>Jeu en temps réel avec socket.io</h1>
+	</head>
+	<body>
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-md-6 col-md-offset-3">
+					<img src="logo.png" class="img-responsive"alt="logo">
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-6 col-md-offset-3">
+					<div id="loginForm">
+						<label for="server_ip">Ton IP :</label> <br>
+						<input type="text" value="127.0.0.1" placeholder="192.168.30.179" id="server_ip" class="bouton" /><br>
 
-		<div id="loginForm">
-			<input type="text" value="127.0.0.1" placeholder="192.168.30.179" id="server_ip" />
-			<input type="text" value="player" placeholder="nickname" id="nick" /><br/>
-			<input type="color" value="#ff0000" id="color" /><br/>
-			<button id="connectBtn">OK</button>
+						<label for="nick">Ton pseudo :</label> <br>
+						<input type="text" value="thibaut" placeholder="nickname" id="nick" class="bouton"/> <br>
+
+						<label for="color">Ta couleur :</label> <br>
+						<input type="color" value="#00C000" id="color" class="bouton color"/> <br>
+
+						<button id="connectBtn" class="btn btn-primary btn-lg">Jouer !</button>
+					</div>
+				</div>
+			</div>
+			<img src="g4io_background.png" class="img-responsive background" alt="g4io">
 		</div>
 
 		<canvas width="800" height="600" id="game"></canvas>
-    </body>
+		<script></script>
+	</body>
 </html>
