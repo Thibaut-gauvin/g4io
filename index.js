@@ -14,6 +14,17 @@ Food.prototype.mass     = 0;
 Food.prototype.color    = null;
 
 
+/**
+ * Define hiddenArea Object
+ */
+ function HideArea(){}
+HideArea.prototype.id       = 0;
+HideArea.prototype.x = 0;
+HideArea.prototype.y = 0;
+HideArea.prototype.mass = 0;
+HideArea.prototype.color = "#2d8e1c";
+
+
 
 
 /**
@@ -35,6 +46,7 @@ Player.prototype.color  = null;
 Player.prototype.type   = 0;
 Player.prototype.mass   = 10;
 Player.prototype.id     = 0;
+Player.prototype.visible = true;
 
 /**
  * Init Player
@@ -65,11 +77,13 @@ Player.prototype._setDataHandler = function(data)
 {
     this.time   = Date.now();
     this.mass   = data.mass;
+    this.speed   = data.speed;
     this.name   = data.name;
     this.x      = data.x;
     this.y      = data.y;
     this.color  = data.color;
     this.logged = true;
+    this.visible = data.visible;
 };
 
 /**
@@ -82,11 +96,13 @@ Player.prototype._loginHandler = function(data)
     var gameServer  = GameServer.getInstance();
     this.time       = Date.now();
     this.mass       = data.mass;
+    this.speed       = data.speed;
     this.name       = data.name;
     this.x          = data.x;
     this.y          = data.y;
     this.color      = data.color;
     this.logged     = true;
+    this.visible     = data.visible;
 
     this.socket.on('collide_food', gameServer._collideFoodHandler.bind(gameServer));
     this.socket.on('collide_player', gameServer._collidePlayerHandler.bind(gameServer));
@@ -99,7 +115,7 @@ Player.prototype._loginHandler = function(data)
  */
 Player.prototype.getState       = function()
 {
-    return { x: this.x, y: this.y, color: this.color, name: this.name, mass:this.mass, id:this.id };
+    return { x: this.x, y: this.y, color: this.color, name: this.name, mass: this.mass, id: this.id, visible: this.visible };
 };
 
 /**
@@ -116,6 +132,7 @@ Player.prototype.destroy = function()
     this.x      = 0;
     this.y      = 0;
     this.mass   = 0;
+    this.speed   = 0;
     this.color  = null;
     this.id     = 0;
 };
@@ -134,6 +151,7 @@ GameServer.prototype._io            = null;
 GameServer.prototype._refreshRate   = null;
 GameServer.prototype._players       = null;
 GameServer.prototype._foods         = null;
+GameServer.prototype._hideAreas         = null;
 GameServer.prototype.lastPlayerId   = 0;
 
 /**
@@ -155,7 +173,7 @@ GameServer.prototype.refresh            = function()
 {
     var timestamp   = Date.now();
     var inactives   = [];
-    var data        = { players: [], food: this._foods };
+    var data        = { players: [], food: this._foods, hideAreas: this._hideAreas };
     var i           = this._players.length;
     var current     = null;
 
@@ -220,6 +238,33 @@ GameServer.prototype._generateFood               = function(nb)
     return foods;
 };
 
+
+/**
+ * Generate new random hide areas items and send them to client
+ *
+ * @param nb
+ * @returns { Array }
+ */
+GameServer.prototype._generateHideArea               = function(nb)
+{
+    var hideAreas = [];
+    while( --nb > -1 )
+    {
+        var hideArea    = new HideArea();
+        hideArea.x      = ( Math.random() * 800 ) >> 0;
+        hideArea.y      = ( Math.random() * 600 ) >> 0;
+        hideArea.mass   = 50;
+        hideArea.color  = "#2d8e1c";
+        // hideArea.id     = nb;
+
+        hideAreas.push(hideArea);
+    }
+
+    return hideAreas;
+};
+
+
+
 /**
  * Init Game
  */
@@ -244,7 +289,8 @@ GameServer.prototype.init                       = function()
     app.get('/', this._serveHomePage);
     app.use(express.static(__dirname + '/'));
 
-    this._foods = this._generateFood(100);
+    this._foods = this._generateFood(80);
+    this._hideAreas = this._generateHideArea(10);
     this.refresh();
 };
 
@@ -304,7 +350,7 @@ GameServer.prototype._collidePlayerHandler      = function(playerId)
     while( --i > -1 )
     {
         current = this._players[i];
-        if( current.id == playerId )
+        if( current.id == playerId)
         {
             current.socket.disconnect();
             this._players.splice( this._players.indexOf( current ), 1);

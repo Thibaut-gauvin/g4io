@@ -15,13 +15,15 @@ Player.prototype.logged         = false;
 Player.prototype.mass           = 10;
 Player.prototype.id             = 0;
 Player.prototype.speed 			= 1;
+Player.prototype.visible = false;
+
 
 /**
  * Return player properties to server
  */
 Player.prototype.getState       = function()
 {
-    return { x: this.x, y: this.y, color: this.color, name: this.name, mass: this.mass, id:this.id };
+    return { x: this.x, y: this.y, color: this.color, name: this.name, mass: this.mass, id:this.id, visible : this.visible };
 };
 
 
@@ -73,6 +75,7 @@ Application.prototype.init                      = function()
 
     this._socket.on('require_login', this._requireLoginHandler.bind(this) );
     this._socket.on('refresh_world', this._refreshHandler.bind(this) );
+
 };
 
 /**
@@ -107,6 +110,38 @@ Application.prototype.checkCollisionsFood       = function(entities)
         }
     }
 };
+
+/**
+ * Check if player collide with some Hide areas
+ *
+ * @param entities
+ */
+Application.prototype.checkCollisionsHideArea       = function(entities)
+{
+    var distX       = 0;
+    var distY       = 0;
+    var dist        = 0;
+    var currentX    = this._player.x;
+    var currentY    = this._player.y;
+    var i           = entities.length;
+    var entity      = null;
+
+    while( --i > -1 )
+    {
+        entity = entities[i];
+
+        distX = ( entity.x - currentX ) * ( entity.x - currentX );
+        distY = ( entity.y - currentY ) * ( entity.y - currentY );
+
+        dist = Math.sqrt( distX + distY );
+
+        if( dist <= ( this._player.mass >> 1 ) )
+            this._collideHideAreaHandler(true);
+        else
+            this._collideHideAreaHandler(false);
+    }
+};
+
 
 /**
  * Check if player collide with other players
@@ -147,9 +182,13 @@ Application.prototype.checkCollisionsPlayer     = function(entities)
 
                     if(eatAnotherPlayer)
                     {
-                        this._player.mass += parseInt(entity.mass / 10);
-                        this._socket.emit("collide_player", entity.id);
-                        eatAnotherPlayer = false;
+                        if(entity.visible && this._player.visible)
+                        {
+                            this._player.mass += parseInt(entity.mass / 10);
+                            this._socket.emit("collide_player", entity.id);
+                            eatAnotherPlayer = false;
+                        }
+                        
                     }
                 }
             }
@@ -166,7 +205,9 @@ Application.prototype._refreshHandler           = function(data)
 {
     var players         = data.players;
     var foods           = data.food;
+    var hideAreas           = data.hideAreas;
     var foodLength      = foods.length;
+    var hideAreasLength      = hideAreas.length;
     var playerLength    = players.length;
 
     var canvas      = this._canvas;
@@ -177,6 +218,7 @@ Application.prototype._refreshHandler           = function(data)
     context.clearRect(0,0,canvas.width, canvas.height );
 
     this.checkCollisionsFood(foods);
+    this.checkCollisionsHideArea(hideAreas);
     this.checkCollisionsPlayer(players);
 
     while( --foodLength > -1 )
@@ -195,6 +237,29 @@ Application.prototype._refreshHandler           = function(data)
     while( --playerLength > -1 )
     {
         current = players[playerLength];
+        if(current.visible == true && current.mass <= 50)
+        {
+            radius = ( current.mass >> 1 );
+
+            context.save();
+            context.translate(current.x, current.y);
+            context.beginPath();
+            context.fillStyle = current.color;
+            context.arc( 0, 0, radius, 0, Math.PI * 2 );
+            context.fill();
+            context.restore();
+
+            players.splice( players.indexOf( current ), 1);
+        }
+    }
+
+    playerLength = players.length;
+
+
+    while( --hideAreasLength > -1 )
+    {
+        current = hideAreas[hideAreasLength];
+
         radius = ( current.mass >> 1 );
 
         context.save();
@@ -204,6 +269,27 @@ Application.prototype._refreshHandler           = function(data)
         context.arc( 0, 0, radius, 0, Math.PI * 2 );
         context.fill();
         context.restore();
+    }
+
+
+    while( --playerLength > -1 )
+    {
+        current = players[playerLength];
+
+        if(current.visible == true)
+        {
+            radius = ( current.mass >> 1 );
+
+            context.save();
+            context.translate(current.x, current.y);
+            context.beginPath();
+            context.fillStyle = current.color;
+            context.arc( 0, 0, radius, 0, Math.PI * 2 );
+            context.fill();
+            context.restore();
+
+            players.splice( players.indexOf( current ), 1);
+        }
     }
 };
 
@@ -264,6 +350,23 @@ Application.prototype._render = function()
     this._refreshRate -=  this._player.mass/10 ;
 
     setTimeout(this._render.bind(this), this._refreshRate);
+};
+
+
+/**
+ * Send player position to server
+ */
+Application.prototype._collideHideAreaHandler = function(onContact)
+{
+
+    if( this._player.mass <= 50 && onContact == true )
+        this._player.visible = false;
+    else
+        this._player.visible = true;
+
+
+    this._socket.emit('set_player_data', this._player.getState());
+
 };
 
 /**
