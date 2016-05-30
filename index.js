@@ -19,10 +19,10 @@ Food.prototype.color    = null;
  */
  function HideArea(){}
 HideArea.prototype.id       = 0;
-HideArea.prototype.x = 0;
-HideArea.prototype.y = 0;
-HideArea.prototype.mass = 0;
-HideArea.prototype.color = "#2d8e1c";
+HideArea.prototype.x        = 0;
+HideArea.prototype.y        = 0;
+HideArea.prototype.mass     = 0;
+HideArea.prototype.color    = "#2d8e1c";
 
 
 
@@ -37,16 +37,16 @@ function Player(socket)
     this._init(socket);
 }
 
-Player.prototype.logged = false;
-Player.prototype.socket = null;
-Player.prototype.name   = null;
-Player.prototype.x      = 0;
-Player.prototype.y      = 0;
-Player.prototype.color  = null;
-Player.prototype.type   = 0;
-Player.prototype.mass   = 10;
-Player.prototype.id     = 0;
-Player.prototype.visible = true;
+Player.prototype.logged     = false;
+Player.prototype.socket     = null;
+Player.prototype.name       = null;
+Player.prototype.x          = 0;
+Player.prototype.y          = 0;
+Player.prototype.color      = null;
+Player.prototype.type       = 0;
+Player.prototype.mass       = 10;
+Player.prototype.id         = 0;
+Player.prototype.visible    = true;
 
 /**
  * Init Player
@@ -75,15 +75,15 @@ Player.prototype._init = function(socket)
  */
 Player.prototype._setDataHandler = function(data)
 {
-    this.time   = Date.now();
-    this.mass   = data.mass;
-    this.speed   = data.speed;
-    this.name   = data.name;
-    this.x      = data.x;
-    this.y      = data.y;
-    this.color  = data.color;
-    this.logged = true;
-    this.visible = data.visible;
+    this.time       = Date.now();
+    this.mass       = data.mass;
+    this.speed      = data.speed;
+    this.name       = data.name;
+    this.x          = data.x;
+    this.y          = data.y;
+    this.color      = data.color;
+    this.logged     = true;
+    this.visible    = data.visible;
 };
 
 /**
@@ -96,13 +96,13 @@ Player.prototype._loginHandler = function(data)
     var gameServer  = GameServer.getInstance();
     this.time       = Date.now();
     this.mass       = data.mass;
-    this.speed       = data.speed;
+    this.speed      = data.speed;
     this.name       = data.name;
     this.x          = data.x;
     this.y          = data.y;
     this.color      = data.color;
     this.logged     = true;
-    this.visible     = data.visible;
+    this.visible    = data.visible;
 
     this.socket.on('collide_food', gameServer._collideFoodHandler.bind(gameServer));
     this.socket.on('collide_player', gameServer._collidePlayerHandler.bind(gameServer));
@@ -133,7 +133,7 @@ Player.prototype.destroy = function()
     this.x      = 0;
     this.y      = 0;
     this.mass   = 0;
-    this.speed   = 0;
+    this.speed  = 0;
     this.color  = null;
     this.id     = 0;
 };
@@ -152,7 +152,7 @@ GameServer.prototype._io            = null;
 GameServer.prototype._refreshRate   = null;
 GameServer.prototype._players       = null;
 GameServer.prototype._foods         = null;
-GameServer.prototype._hideAreas         = null;
+GameServer.prototype._hideAreas     = null;
 GameServer.prototype.lastPlayerId   = 0;
 
 /**
@@ -371,7 +371,7 @@ GameServer.prototype._createFoodHandler         = function(foodPos)
 
     this._foods.push(food);
     
-}
+};
 
 /**
  * Start game

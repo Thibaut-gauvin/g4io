@@ -15,7 +15,7 @@ Player.prototype.logged         = false;
 Player.prototype.mass           = 10;
 Player.prototype.id             = 0;
 Player.prototype.speed 			= 1;
-Player.prototype.visible = false;
+Player.prototype.visible        = false;
 
 
 /**
@@ -23,16 +23,11 @@ Player.prototype.visible = false;
  */
 Player.prototype.getState       = function()
 {
-    return { x: this.x, y: this.y, color: this.color, name: this.name, mass: this.mass, id:this.id, visible : this.visible };
+    return { x: this.x, y: this.y, color: this.color, name: this.name, mass: this.mass, id:this.id, visible: this.visible };
 };
 
 
 
-
-/**
- * Define Application Object
- */
-function Application(){}
 
 /**
  * Define Application Object
@@ -204,17 +199,17 @@ Application.prototype.checkCollisionsPlayer     = function(entities)
  */
 Application.prototype._refreshHandler           = function(data)
 {
-    var players         = data.players;
-    var foods           = data.food;
+    var players             = data.players;
+    var foods               = data.food;
     var hideAreas           = data.hideAreas;
-    var foodLength      = foods.length;
-    var hideAreasLength      = hideAreas.length;
-    var playerLength    = players.length;
+    var foodLength          = foods.length;
+    var hideAreasLength     = hideAreas.length;
+    var playerLength        = players.length;
 
-    var canvas      = this._canvas;
-    var current     = null;
-    var context     = canvas.getContext("2d");
-    var radius      = 0;
+    var canvas              = this._canvas;
+    var current             = null;
+    var context             = canvas.getContext("2d");
+    var radius              = 0;
 
     context.clearRect(0,0,canvas.width, canvas.height );
 
@@ -253,9 +248,6 @@ Application.prototype._refreshHandler           = function(data)
             players.splice( players.indexOf( current ), 1);
         }
     }
-
-    playerLength = players.length;
-
 
     while( --hideAreasLength > -1 )
     {
@@ -306,7 +298,7 @@ Application.prototype.sendFood                  = function()
         });
         this._player.speed *= 1.5;
     }
-}
+};
 
 /**
  * Debug method to grow up player mass when arrow up is press
@@ -325,7 +317,7 @@ Application.prototype._keyHandler               = function(event)
  */
 Application.prototype._splitPlayerHandler       = function()
 {
-    this._player
+    console.log('toto');
 };
 
 /**
