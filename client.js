@@ -14,7 +14,7 @@ Player.prototype.y              = 0;
 Player.prototype.logged         = false;
 Player.prototype.mass           = 10;
 Player.prototype.id             = 0;
-Player.prototype.speed = 0;
+Player.prototype.speed 			= 1;
 
 /**
  * Return player properties to server
@@ -103,6 +103,7 @@ Application.prototype.checkCollisionsFood       = function(entities)
         {
             this._player.mass += parseInt(entity.mass / 10);
             this._socket.emit("collide_food", entity.id);
+			this._player.speed /= 1.05;
         }
     }
 };
@@ -255,9 +256,8 @@ Application.prototype._render = function()
 {
     if( this._player.logged == true )
     {
-        console.log(Math.sqrt(1 / (this._player.mass * 30) )) ;
-        this._player.x += parseInt( ( this.mouseX - this._player.x ) * (Math.sqrt(1 / (this._player.mass * 30)) ));
-        this._player.y += parseInt( ( this.mouseY - this._player.y ) * (Math.sqrt(1 / (this._player.mass * 30)) ));
+        this._player.x += parseInt( ( this.mouseX - this._player.x ) * 0.1 ) * this._player.speed;
+        this._player.y += parseInt( ( this.mouseY - this._player.y ) * 0.1 ) * this._player.speed;
         this._socket.emit('set_player_data', this._player.getState());
     }
 
