@@ -9,8 +9,7 @@ body {
 #game {
     display: none;
     margin: 0 auto 50px auto;
-    border: 1px solid black;
-    border-radius: 2px;
+    border-radius: 5px;
     background-color: #F6F5F5;
 }
 
