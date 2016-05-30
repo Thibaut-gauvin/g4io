@@ -294,12 +294,30 @@ Application.prototype._refreshHandler           = function(data)
     }
 };
 
+Application.prototype.sendFood                  = function()
+{
+    if(this._player.mass > 20) {
+        this._player.mass = this._player.mass - 10;
+
+        this._socket.emit('create_food', {
+            x: this._player.x,
+            y: this._player.y,
+            color: this._player.color
+        });
+        this._player.speed *= 1.5;
+    }
+}
+
 /**
  * Debug method to grow up player mass when arrow up is press
  */
-Application.prototype._keyHandler               = function()
+Application.prototype._keyHandler               = function(event)
 {
-    this._player.mass += 5;
+    if(event.keyCode == 75) {
+        this.sendFood();
+    } else {
+        this._player.mass += 5;
+    }
 };
 
 /**

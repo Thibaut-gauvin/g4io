@@ -106,6 +106,7 @@ Player.prototype._loginHandler = function(data)
 
     this.socket.on('collide_food', gameServer._collideFoodHandler.bind(gameServer));
     this.socket.on('collide_player', gameServer._collidePlayerHandler.bind(gameServer));
+    this.socket.on('create_food', gameServer._createFoodHandler.bind(gameServer) );
 };
 
 /**
@@ -358,6 +359,19 @@ GameServer.prototype._collidePlayerHandler      = function(playerId)
         }
     }
 };
+
+GameServer.prototype._createFoodHandler         = function(foodPos)
+{
+    var food    = new Food();
+    food.x      = foodPos.x;
+    food.y      = foodPos.y;
+    food.mass   = 10;
+    food.color  = foodPos.color;
+    food.id     = this._foods.length + 1;
+
+    this._foods.push(food);
+    
+}
 
 /**
  * Start game
