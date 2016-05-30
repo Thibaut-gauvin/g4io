@@ -2,6 +2,26 @@
 /*         Client            */
 /*****************************/
 
+const GAME_WIDTH    = 3000;
+const GAME_HEIGHT   = 3000;
+
+function Screen(){}
+Screen.prototype.canvas     = null;
+Screen.prototype.locationX  = 0;
+Screen.prototype.locationY  = 0;
+
+Screen.prototype.init = function(playerX, playerY) {
+    this.canvas             = document.getElementById('game');
+    this.canvas.width       = 1080;
+    this.canvas.height      = 720;
+    this.locationX          = playerX - (this.canvas.width / 2);
+    this.locationY          = playerY - (this.canvas.height / 2);
+}
+Screen.prototype.refresh = function(playerX, playerY) {
+    this.locationX      = playerX - (this.canvas.width / 2);
+    this.locationY      = playerY - (this.canvas.height / 2);
+    console.log(this.locationX + ' : ' + this.locationY);
+}
 
 /**
  * Define Player Object
@@ -41,6 +61,7 @@ Application.prototype._canvas       = null;
 Application.prototype.mouseX        = 0;
 Application.prototype.mouseY        = 0;
 Application.prototype.lastPlayerId  = 0;
+Application.prototype._screen       = null;
 
 /**
  * Init Application
@@ -61,6 +82,8 @@ Application.prototype.init                      = function()
     this._canvas        = document.getElementById('game');
     this._port          = 3000;
     this._refreshRate   = 40;
+    this._screen        = new Screen();
+    this._screen.init();
 
     window.addEventListener("keyup", this._keyHandler.bind(this) );
     this._canvas.addEventListener( "mousemove", this._overHandler.bind(this) );
@@ -169,6 +192,8 @@ Application.prototype._refreshHandler           = function(data)
     var context     = canvas.getContext("2d");
     var radius      = 0;
 
+    this._screen.refresh(this._player.x, this._player.y);
+
     context.clearRect(0,0,canvas.width, canvas.height );
 
     this.checkCollisionsFood(foods);
@@ -177,29 +202,35 @@ Application.prototype._refreshHandler           = function(data)
     while( --foodLength > -1 )
     {
         current = foods[foodLength];
-        radius  = current.mass / 2;
 
-        context.save();
-        context.translate(current.x, current.y);
-        context.beginPath();
-        context.fillStyle = current.color;
-        context.arc( 0, 0, radius, 0, Math.PI * 2 );
-        context.fill();
-        context.restore();
+        if(current.x >= this._screen.locationX && current.x <= (this._screen.locationX + this._screen.canvas.width)
+            && current.y >= this._screen.locationY && current.y <= (this._screen.locationY + this._screen.canvas.height)) {
+            radius  = current.mass / 2;
+
+            context.save();
+            context.translate(current.x, current.y);
+            context.beginPath();
+            context.fillStyle = current.color;
+            context.arc( 0, 0, radius, 0, Math.PI * 2 );
+            context.fill();
+            context.restore();
+        }
     }
 
     while( --playerLength > -1 )
     {
         current = players[playerLength];
-        radius  = ( current.mass >> 1 );
 
-        context.save();
-        context.translate(current.x, current.y);
-        context.beginPath();
-        context.fillStyle = current.color;
-        context.arc( 0, 0, radius, 0, Math.PI * 2 );
-        context.fill();
-        context.restore();
+            radius  = ( current.mass >> 1 );
+
+            context.save();
+            context.translate(current.x, current.y);
+            context.beginPath();
+            context.fillStyle = current.color;
+            context.arc( 0, 0, radius, 0, Math.PI * 2 );
+            context.fill();
+            context.restore();
+
     }
 };
 

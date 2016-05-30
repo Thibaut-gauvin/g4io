@@ -2,6 +2,8 @@
 /*         Server            */
 /*****************************/
 
+const GAME_WIDTH    = 3000;
+const GAME_HEIGHT   = 3000;
 
 /**
  * Define Food Object
@@ -209,8 +211,8 @@ GameServer.prototype._generateFood               = function(nb)
     while( --nb > -1 )
     {
         var food    = new Food();
-        food.x      = ( Math.random() * 800 ) >> 0;
-        food.y      = ( Math.random() * 600 ) >> 0;
+        food.x      = ( Math.random() * GAME_WIDTH ) >> 0;
+        food.y      = ( Math.random() * GAME_HEIGHT ) >> 0;
         food.mass   = 10;
         food.color  = '#'+parseInt( Math.random() * 0xFFFFFF ).toString(16);
         food.id     = nb;
@@ -286,8 +288,8 @@ GameServer.prototype._collideFoodHandler        = function(foodId)
         current = this._foods[i];
         if( current.id == foodId )
         {
-            current.x = parseInt(Math.random() * 800);
-            current.y = parseInt(Math.random() * 600);
+            current.x = parseInt(Math.random() * GAME_WIDTH);
+            current.y = parseInt(Math.random() * GAME_HEIGHT);
         }
     }
 };
